@@ -24,7 +24,7 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Build Release APK
-        run: ./gradlew :app:assembleFossRelease
+        run: ./gradlew :app:assembleFossRelease -PappVersionName=${GITHUB_REF_NAME}
 
       - name: Create Release
         uses: softprops/action-gh-release@v2

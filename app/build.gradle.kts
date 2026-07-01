@@ -30,7 +30,7 @@ plugins {
 
 val appName = "Momento"
 val appVersionCode = 1720
-val appVersionName = "1.7.2"
+val appVersionName = project.findProperty("appVersionName") as? String ?: "1.7.2"
 val appNameSpace = "com.sagar.momento"
 
 val gitHash = execute("git", "rev-parse", "HEAD").take(7)
@@ -127,7 +127,7 @@ android {
 androidComponents {
     onVariants { variant ->
         variant.outputs.forEach { output ->
-            output.outputFileName.set("Momento ${appVersionName} - PranavSagarXD.apk")
+            output.outputFileName.set("Momento-${appVersionName}-PranavSagarXD.apk")
         }
     }
 }
@@ -188,8 +188,11 @@ dependencies {
 
 room3 { schemaDirectory("$projectDir/schemas") }
 
-fun execute(vararg command: String): String =
+fun execute(vararg command: String): String = try {
     providers.exec { commandLine(*command) }.standardOutput.asText.get().trim()
+} catch (_: Exception) {
+    "unknown"
+}
 
 val generateChangelogJson by
     tasks.registering {
@@ -232,7 +235,13 @@ val generateChangelogJson by
                     append("    \"changes\": [\n")
 
                     entry.value.forEachIndexed { i, item ->
-                        append("      \"${item.replace("\"", "\\\"")}\"")
+                        val escaped = item
+                            .replace("\\", "\\\\")
+                            .replace("\"", "\\\"")
+                            .replace("\n", "\\n")
+                            .replace("\r", "\\r")
+                            .replace("\t", "\\t")
+                        append("      \"$escaped\"")
                         if (i != entry.value.lastIndex) append(",")
                         append("\n")
                     }
