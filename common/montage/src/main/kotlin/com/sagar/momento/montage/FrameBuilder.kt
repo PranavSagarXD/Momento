@@ -1,0 +1,238 @@
+/*
+ * Copyright (C) 2026  PranavSagarXD
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+package com.sagar.momento.montage
+
+import android.content.Context
+import android.content.res.AssetFileDescriptor
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.media.MediaCodec
+import android.media.MediaCodecInfo
+import android.media.MediaCodecList
+import android.media.MediaExtractor
+import android.media.MediaFormat
+import android.os.Build
+import android.util.Log
+import android.view.Surface
+import androidx.annotation.RawRes
+import java.io.IOException
+import java.nio.ByteBuffer
+
+internal class FrameBuilder(
+    context: Context,
+    private val muxerConfig: MuxerConfiguration,
+    @property:RawRes audioTrackResource: Int?,
+) {
+
+    companion object {
+        private const val TAG = "FrameBuilder"
+        private const val TIMEOUT_USEC = 10_000L
+    }
+
+    private val mediaFormat: MediaFormat =
+        MediaFormat.createVideoFormat(
+                muxerConfig.mimeType,
+                muxerConfig.videoWidth,
+                muxerConfig.videoHeight,
+            )
+            .apply {
+                setInteger(
+                    MediaFormat.KEY_COLOR_FORMAT,
+                    MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface,
+                )
+                setInteger(MediaFormat.KEY_BIT_RATE, muxerConfig.bitrate)
+                setInteger(MediaFormat.KEY_FRAME_RATE, muxerConfig.framesPerSecond.toInt())
+                setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, muxerConfig.iFrameInterval)
+                setInteger(MediaFormat.KEY_COLOR_RANGE, MediaFormat.COLOR_RANGE_LIMITED)
+                setInteger(MediaFormat.KEY_COLOR_STANDARD, MediaFormat.COLOR_STANDARD_BT709)
+                setInteger(MediaFormat.KEY_COLOR_TRANSFER, MediaFormat.COLOR_TRANSFER_SDR_VIDEO)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    setInteger(
+                        MediaFormat.KEY_COLOR_TRANSFER_REQUEST,
+                        MediaFormat.COLOR_TRANSFER_SDR_VIDEO,
+                    )
+                }
+            }
+    private val mediaCodec: MediaCodec
+    private val bufferInfo = MediaCodec.BufferInfo()
+    private var surface: Surface? = null
+    private var frameMuxer: FrameMuxer = muxerConfig.createFrameMuxer()
+    private var audioExtractor: MediaExtractor? = null
+
+    private var pushedFrames: Long = 0
+
+    init {
+
+        val codecs = MediaCodecList(MediaCodecList.REGULAR_CODECS)
+        val codecName =
+            codecs.findEncoderForFormat(mediaFormat)
+                ?: throw IOException("No suitable codec for format: $mediaFormat")
+        mediaCodec = MediaCodec.createByCodecName(codecName)
+
+        audioTrackResource?.let { res ->
+            val afd: AssetFileDescriptor = context.resources.openRawResourceFd(res)
+            audioExtractor =
+                MediaExtractor().apply {
+                    setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
+                }
+        }
+    }
+
+    @Throws(IOException::class)
+    fun start() {
+        mediaCodec.configure(mediaFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
+        surface = mediaCodec.createInputSurface()
+        mediaCodec.start()
+
+        drainCodec(false)
+    }
+
+    fun createFrame(bitmap: Bitmap) {
+        for (i in 0 until muxerConfig.framesPerImage) {
+            val canvas = lockCanvas() ?: continue
+            canvas.drawBitmap(bitmap, 0f, 0f, null)
+            postCanvasFrame(canvas)
+        }
+    }
+
+    private fun lockCanvas(): Canvas? = surface?.lockHardwareCanvas()
+
+    private fun postCanvasFrame(canvas: Canvas?) {
+        try {
+            surface?.unlockCanvasAndPost(canvas)
+        } catch (e: Exception) {
+            Log.w(TAG, "unlockCanvasAndPost failed: ${e.message}")
+        }
+
+        drainCodec(false)
+    }
+
+    private fun drainCodec(endOfStream: Boolean) {
+        if (endOfStream) {
+            try {
+                mediaCodec.signalEndOfInputStream()
+            } catch (e: IllegalStateException) {
+                Log.e(TAG, "Codec already released", e)
+                return
+            }
+        }
+
+        while (true) {
+            when (val encoderStatus = mediaCodec.dequeueOutputBuffer(bufferInfo, TIMEOUT_USEC)) {
+                MediaCodec.INFO_TRY_AGAIN_LATER -> {
+                    if (!endOfStream) return
+                }
+
+                MediaCodec.INFO_OUTPUT_FORMAT_CHANGED -> {
+                    if (frameMuxer.isStarted()) throw RuntimeException("Format changed twice")
+                    val newFormat = mediaCodec.outputFormat
+                    frameMuxer.start(newFormat, audioExtractor)
+                }
+
+                else -> {
+                    if (encoderStatus < 0) {
+                        Log.w(TAG, "Unexpected encoderStatus: $encoderStatus")
+                        continue
+                    }
+
+                    val encoded =
+                        mediaCodec.getOutputBuffer(encoderStatus)
+                            ?: throw RuntimeException("getOutputBuffer returned null")
+
+                    if (bufferInfo.flags and MediaCodec.BUFFER_FLAG_CODEC_CONFIG != 0) {
+                        bufferInfo.size = 0
+                    }
+
+                    if (bufferInfo.size != 0) {
+                        if (!frameMuxer.isStarted()) throw RuntimeException("Muxer hasn't started")
+
+                        encoded.position(bufferInfo.offset)
+                        encoded.limit(bufferInfo.offset + bufferInfo.size)
+
+                        frameMuxer.muxVideoFrame(encoded, bufferInfo)
+                        pushedFrames++
+                    }
+
+                    mediaCodec.releaseOutputBuffer(encoderStatus, false)
+
+                    if (bufferInfo.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) {
+                        if (!endOfStream) Log.w(TAG, "Reached EOS unexpectedly")
+                        break
+                    }
+                }
+            }
+        }
+    }
+
+    fun muxAudioFrames() {
+        val extractor = audioExtractor ?: return
+        val sampleSize = 256 * 1024
+        val audioBuffer = ByteBuffer.allocate(sampleSize)
+        val audioBufferInfo = MediaCodec.BufferInfo()
+
+        extractor.seekTo(0, MediaExtractor.SEEK_TO_CLOSEST_SYNC)
+
+        while (true) {
+            audioBufferInfo.offset = 0
+            val read = extractor.readSampleData(audioBuffer, 0)
+            if (read < 0) break
+            audioBufferInfo.size = read
+            audioBufferInfo.presentationTimeUs = extractor.sampleTime
+            audioBuffer.position(audioBufferInfo.offset)
+            audioBuffer.limit(audioBufferInfo.offset + audioBufferInfo.size)
+
+            frameMuxer.muxAudioFrame(audioBuffer, audioBufferInfo)
+            extractor.advance()
+        }
+    }
+
+    fun releaseVideoCodec() {
+        try {
+            drainCodec(true)
+        } catch (e: Exception) {
+            Log.w(TAG, "drainCodec on release failed: ${e.message}")
+        }
+        try {
+            mediaCodec.stop()
+        } catch (e: Exception) {
+            /* ignore */
+        }
+        try {
+            mediaCodec.release()
+        } catch (e: Exception) {
+            /* ignore */
+        }
+        try {
+            surface?.release()
+        } catch (e: Exception) {
+            /* ignore */
+        }
+    }
+
+    fun releaseAudioExtractor() {
+        audioExtractor?.release()
+    }
+
+    fun releaseMuxer() {
+        frameMuxer.release()
+    }
+}

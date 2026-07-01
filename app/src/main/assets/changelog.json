@@ -1,0 +1,63 @@
+[
+  {
+    "version": "1.7.2",
+    "changes": [
+      "Fixed color and orientation issues on some devices"
+    ]
+  },
+  {
+    "version": "1.7.1",
+    "changes": [
+      "Bug fixes and Performance improvements"
+    ]
+  },
+  {
+    "version": "1.7.0",
+    "changes": [
+      "Added Camera Option for adding Pictures in Days",
+      "Montage Preferences are saved per project",
+      "Miscellaneous UI Improvements"
+    ]
+  },
+  {
+    "version": "1.6.1",
+    "changes": [
+      "Miscellaneous Updates and Improvements",
+      "Notifications open App on click"
+    ]
+  },
+  {
+    "version": "1.6.0",
+    "changes": [
+      "Material 3 Expressive UI changes"
+    ]
+  },
+  {
+    "version": "1.5.3",
+    "changes": [
+      "Fixed Montage maker face alignment bugs"
+    ]
+  },
+  {
+    "version": "1.5.2",
+    "changes": [
+      "Improved montage maker performance"
+    ]
+  },
+  {
+    "version": "1.5.1",
+    "changes": [
+      "Added option to rescan all faces in the project."
+    ]
+  },
+  {
+    "version": "1.5.0",
+    "changes": [
+      "Changed Face stabilization to free tier and video font to paid",
+      "Replaced Mlkit Face detection with Mediavision, Face detection should be more accurate",
+      "Overhauled DayInfo UI, Added options to highlight face",
+      "Added ChangeLog Dialog to be shown after each update",
+      "Misc Bug fixes and improvements"
+    ]
+  }
+]

@@ -1,0 +1,316 @@
+/*
+ * Copyright (C) 2026  PranavSagarXD
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+package com.sagar.momento.viewmodels
+
+import android.util.Log
+import androidx.compose.ui.util.fastForEachIndexed
+import androidx.core.net.toUri
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import androidx.media3.common.MediaItem
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.ExoPlayer.Builder
+import androidx.media3.exoplayer.ExoPlayer.REPEAT_MODE_ALL
+import io.github.vinceglb.filekit.PlatformFile
+import io.github.vinceglb.filekit.dialogs.toAndroidUri
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.koin.core.annotation.KoinViewModel
+import com.sagar.momento.core.data_classes.MontageConfig
+import com.sagar.momento.core.data_classes.toMontageConfig
+import com.sagar.momento.core.data_classes.toMontageOptions
+import com.sagar.momento.core.enums.VideoAction
+import com.sagar.momento.core.interfaces.AlarmScheduler
+import com.sagar.momento.core.interfaces.FaceDetector
+import com.sagar.momento.core.interfaces.MontageMaker
+import com.sagar.momento.core.interfaces.MontageState
+import com.sagar.momento.core.interfaces.ProjectRepository
+import com.sagar.momento.data.ImageHandler
+import com.sagar.momento.presentation.project.ProjectAction
+import com.sagar.momento.presentation.project.ProjectState
+import com.sagar.momento.presentation.project.ScanState
+
+@KoinViewModel
+class ProjectViewModel(
+    sharedState: SharedState,
+    private val montageMaker: MontageMaker,
+    private val faceDetector: FaceDetector,
+    private val repository: ProjectRepository,
+    private val scheduler: AlarmScheduler,
+    private val imageHandler: ImageHandler,
+) : ViewModel() {
+    private var observeDaysJob: Job? = null
+
+    private val _exoPlayer = MutableStateFlow<ExoPlayer?>(null)
+    val exoPlayer =
+        _exoPlayer
+            .asStateFlow()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = null,
+            )
+
+    private val _state = sharedState.projectState
+    val state =
+        _state
+            .asStateFlow()
+            .onStart { observeConfig() }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = ProjectState(),
+            )
+
+    fun onAction(action: ProjectAction) {
+        when (action) {
+            is OnUpdateProject ->
+                viewModelScope.launch {
+                    repository.upsertProject(action.project)
+                    _state.update { it.copy(project = action.project) }
+                    scheduler.schedule(action.project)
+                }
+
+            is OnDeleteProject ->
+                viewModelScope.launch {
+                    repository.deleteProject(action.project)
+                    scheduler.cancel(action.project)
+                }
+
+            is OnDeleteDay ->
+                viewModelScope.launch {
+                    imageHandler.deleteDayImage(action.day)
+                    repository.deleteDay(action.day)
+                }
+
+            is OnUpsertDay ->
+                viewModelScope.launch {
+                    if (action.isNewImage) {
+                        val uri = PlatformFile(action.day.image).toAndroidUri()
+                        val faceData = faceDetector.getFaceDataFromUri(uri)
+                        val copiedImageUri = imageHandler.copyImageToAppData(action.day)
+
+                        Log.d("ProjectViewModel", "faceData : $faceData")
+
+                        repository.upsertDay(
+                            action.day.copy(faceData = faceData, image = copiedImageUri.toString())
+                        )
+                    } else {
+                        repository.upsertDay(action.day)
+                    }
+                }
+
+            is OnCreateMontage ->
+                viewModelScope.launch {
+                    montageMaker
+                        .createMontageFlow(days = action.days, config = _state.value.montageConfig)
+                        .flowOn(Dispatchers.Default)
+                        .collect { state ->
+                            Log.d("ProjectViewModel", "Montage state: $state")
+
+                            if (state is MontageState.Success) {
+                                _exoPlayer.value?.apply {
+                                    clearMediaItems()
+                                    setMediaItem(MediaItem.fromUri(state.file.toUri()))
+                                    prepare()
+                                }
+                            }
+
+                            _state.update { it.copy(montage = state) }
+                        }
+                }
+
+            OnUpdateDays ->
+                viewModelScope.launch {
+                    refreshDays()
+                    withContext(Dispatchers.Default) { processDays() }
+                }
+
+            OnClearMontageState -> {
+                _exoPlayer.value?.release()
+                _exoPlayer.update { null }
+                _state.update { it.copy(montage = MontageState.ProcessingImages()) }
+            }
+
+            is OnPlayerAction -> {
+                _exoPlayer.value?.let {
+                    when (action.playerAction.action) {
+                        VideoAction.PLAY -> it.play()
+                        VideoAction.PAUSE -> it.pause()
+                        VideoAction.SEEK -> {
+                            (action.playerAction.data as? Long)?.let { position ->
+                                it.seekTo(position)
+                            }
+                        }
+                    }
+                }
+            }
+
+            is OnInitializeExoPlayer -> {
+                if (_exoPlayer.value == null) {
+                    _exoPlayer.update {
+                        Builder(action.context).build().apply {
+                            prepare()
+                            repeatMode = REPEAT_MODE_ALL
+                        }
+                    }
+                }
+            }
+
+            is OnEditMontageConfig -> {
+                viewModelScope.launch {
+                    _state.value.project?.id?.let { projectId ->
+                        updateMontageConfig(projectId = projectId, config = action.config)
+                    }
+                }
+            }
+
+            is OnUpdateReminder ->
+                viewModelScope.launch {
+                    val newProject = _state.value.project!!.copy(alarm = action.alarmData)
+
+                    repository.upsertProject(newProject)
+                    _state.update { it.copy(project = newProject) }
+
+                    if (action.alarmData == null) {
+                        scheduler.cancel(newProject)
+                    } else {
+                        scheduler.schedule(newProject)
+                    }
+                }
+
+            is OnResetMontagePrefs ->
+                viewModelScope.launch {
+                    _state.value.project?.id?.let { projectId ->
+                        updateMontageConfig(projectId = projectId, config = MontageConfig())
+                    }
+                }
+
+            OnStartFaceScan ->
+                viewModelScope.launch {
+                    if (_state.value.days.isEmpty()) return@launch
+
+                    _state.update { it.copy(scanState = ScanState.Processing(0f)) }
+                    val size = _state.value.days.size
+
+                    try {
+                        withContext(Dispatchers.IO) {
+                            _state.value.days.fastForEachIndexed { index, day ->
+                                _state.update {
+                                    it.copy(
+                                        scanState =
+                                            ScanState.Processing(index.toFloat() / size.toFloat())
+                                    )
+                                }
+
+                                val uri = PlatformFile(day.image).toAndroidUri()
+                                val faceData = faceDetector.getFaceDataFromUri(uri)
+                                repository.upsertDay(day.copy(faceData = faceData))
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Log.e("ProjectViewModel", "Error while scanning project for faces: ", e)
+                    } finally {
+                        _state.update { it.copy(scanState = ScanState.Done) }
+                    }
+                }
+
+            OnResetScanState -> {
+                _state.update { it.copy(scanState = ScanState.Idle) }
+            }
+        }
+    }
+
+    private suspend fun updateMontageConfig(projectId: Long, config: MontageConfig) {
+        repository.upsertMontageOptions(config.toMontageOptions(projectId))
+
+        repository.getMontageOptionsByProjectId(projectId)?.toMontageConfig()?.let { config ->
+            _state.update { it.copy(montageConfig = config) }
+        }
+    }
+
+    private fun refreshDays() {
+        observeDaysJob?.cancel()
+        observeDaysJob =
+            viewModelScope.launch {
+                repository
+                    .getDays()
+                    .onEach { days ->
+                        val filteredDays =
+                            async(Dispatchers.Default) {
+                                days
+                                    .filter { it.projectId == _state.value.project?.id }
+                                    .sortedByDescending { it.date }
+                            }
+                        _state.update { it.copy(days = filteredDays.await()) }
+                    }
+                    .launchIn(this)
+            }
+    }
+
+    private suspend fun processDays() {
+        state.value.days.forEach { day ->
+            if (day.faceData == null) {
+                val uri = PlatformFile(day.image).toAndroidUri()
+                val faceData = faceDetector.getFaceDataFromUri(uri)
+                repository.upsertDay(day.copy(faceData = faceData))
+            }
+        }
+    }
+
+    private fun observeConfig() =
+        viewModelScope.launch {
+            // get montage config when project changes
+            _state
+                .map { it.project?.id }
+                .distinctUntilChanged()
+                .onEach { projectId ->
+                    projectId?.let {
+                        val config =
+                            repository.getMontageOptionsByProjectId(it)?.toMontageConfig()
+                                ?: MontageConfig()
+
+                        _state.update { state -> state.copy(montageConfig = config) }
+                    }
+                }
+                .launchIn(this)
+        }
+
+    override fun onCleared() {
+        super.onCleared()
+        _exoPlayer.value?.release()
+    }
+}

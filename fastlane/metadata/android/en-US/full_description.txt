@@ -1,0 +1,7 @@
+Momento is a permissionless and privacy friendly way to track your progress on anything and make a montage out of
+it without thinking about storage or editing
+
+- Montage maker with customizations
+- Auto face stabilization
+- Calendar View
+- Daily reminders
