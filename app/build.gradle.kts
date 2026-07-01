@@ -29,8 +29,8 @@ plugins {
 }
 
 val appName = "Momento"
-val appVersionCode = 1720
-val appVersionName = project.findProperty("appVersionName") as? String ?: "1.7.2"
+val appVersionCode = 1721
+val appVersionName = project.findProperty("appVersionName") as? String ?: "1.1"
 val appNameSpace = "com.sagar.momento"
 
 val gitHash = execute("git", "rev-parse", "HEAD").take(7)

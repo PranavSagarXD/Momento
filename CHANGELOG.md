@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1
+- Updated app icon and splash screen
+- Fixed APK naming on GitHub releases
+- Various bug fixes and improvements
+
 ## 1.7.2
 - Fixed color and orientation issues on some devices
 
