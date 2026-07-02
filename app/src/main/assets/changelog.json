@@ -1,5 +1,14 @@
 [
   {
+    "version": "2.1",
+    "changes": [
+      "Improved auto-update: skip version option, 24h check cooldown, better error handling",
+      "Fixed update popup showing on the latest version",
+      "Fixed download progress getting stuck at 100%",
+      "General improvements and fixes"
+    ]
+  },
+  {
     "version": "2.0",
     "changes": [
       "Added auto-update — app now checks for new versions on launch",
@@ -59,12 +68,6 @@
     "version": "1.5.2",
     "changes": [
       "Improved montage maker performance"
-    ]
-  },
-  {
-    "version": "1.5.1",
-    "changes": [
-      "Added option to rescan all faces in the project."
     ]
   }
 ]
