@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0
+- Added auto-update — app now checks for new versions on launch
+- Unlocked all features: stabilize faces, censor faces, video quality, custom fonts, AMOLED theme, seed color, and more
+- Simplified app distribution
+- Various improvements and fixes
+
 ## 1.1
 - Updated app icon and splash screen
 - Fixed APK naming on GitHub releases
