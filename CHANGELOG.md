@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.1
+- Security improvements and performance optimizations
+- Various bug fixes
+
 ## 2.0
 - Added auto-update — app now checks for new versions on launch
 - Fixed APK install not launching after download — uses proper system package installer
