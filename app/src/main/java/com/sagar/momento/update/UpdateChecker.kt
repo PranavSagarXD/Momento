@@ -45,7 +45,7 @@ class UpdateChecker {
 
             val tagName = root["tag_name"]?.jsonPrimitive?.content ?: return@withContext null
             val latestVersion = tagName.removePrefix("v")
-            val currentVersion = BuildConfig.VERSION_NAME
+            val currentVersion = BuildConfig.VERSION_NAME.removePrefix("v")
 
             if (!isNewerVersion(latestVersion, currentVersion)) return@withContext null
 

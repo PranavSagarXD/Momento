@@ -65,6 +65,10 @@ class AppUpdater(private val context: Context) {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
 
-        context.startActivity(intent)
+        if (intent.resolveActivity(context.packageManager) != null) {
+            context.startActivity(intent)
+        } else {
+            android.util.Log.e("AppUpdater", "No activity found to handle package install")
+        }
     }
 }

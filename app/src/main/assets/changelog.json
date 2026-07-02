@@ -1,5 +1,22 @@
 [
   {
+    "version": "2.0",
+    "changes": [
+      "Added auto-update — app now checks for new versions on launch",
+      "Unlocked all features: stabilize faces, censor faces, video quality, custom fonts, AMOLED theme, seed color, and more",
+      "Simplified app distribution",
+      "Various improvements and fixes"
+    ]
+  },
+  {
+    "version": "1.1",
+    "changes": [
+      "Updated app icon and splash screen",
+      "Fixed APK naming on GitHub releases",
+      "Various bug fixes and improvements"
+    ]
+  },
+  {
     "version": "1.7.2",
     "changes": [
       "Fixed color and orientation issues on some devices"
@@ -48,16 +65,6 @@
     "version": "1.5.1",
     "changes": [
       "Added option to rescan all faces in the project."
-    ]
-  },
-  {
-    "version": "1.5.0",
-    "changes": [
-      "Enhanced Face stabilization",
-      "Replaced Mlkit Face detection with Mediavision, Face detection should be more accurate",
-      "Overhauled DayInfo UI, Added options to highlight face",
-      "Added ChangeLog Dialog to be shown after each update",
-      "Misc Bug fixes and improvements"
     ]
   }
 ]

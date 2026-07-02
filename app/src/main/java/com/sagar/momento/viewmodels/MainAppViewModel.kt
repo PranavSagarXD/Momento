@@ -86,7 +86,9 @@ class MainAppViewModel(
             val success = appUpdater.downloadAndInstall(info.downloadUrl) { progress ->
                 _state.update { it.copy(downloadProgress = progress) }
             }
-            if (!success) {
+            if (success) {
+                _state.update { it.copy(updateInfo = null, isDownloading = false, downloadProgress = 0f) }
+            } else {
                 _state.update { it.copy(isDownloading = false, downloadProgress = 0f) }
             }
         }
