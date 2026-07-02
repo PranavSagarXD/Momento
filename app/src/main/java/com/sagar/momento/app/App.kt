@@ -22,6 +22,7 @@
 package com.sagar.momento.app
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -43,8 +44,8 @@ import com.sagar.momento.presentation.onboarding.Onboarding
 import com.sagar.momento.presentation.project.ProjectGraph
 import com.sagar.momento.presentation.settings.SettingsGraph
 import com.sagar.momento.presentation.shared.ChangelogSheet
+import com.sagar.momento.presentation.shared.MandatoryUpdateScreen
 import com.sagar.momento.presentation.shared.MomentoTheme
-import com.sagar.momento.presentation.shared.UpdateSheet
 import com.sagar.momento.viewmodels.HomeViewModel
 import com.sagar.momento.viewmodels.MainAppViewModel
 import com.sagar.momento.viewmodels.OnboardingViewModel
@@ -72,88 +73,89 @@ fun App() {
         }
     }
 
-    MomentoTheme(theme = state.theme) {
-        if (state.currentChangelog != null && state.isOnboardingDone == true) {
-            ChangelogSheet(
-                currentLog = state.currentChangelog!!,
-                onDismissRequest = { mainViewModel.dismissChangelog() },
-            )
-        }
-
+    Box(modifier = Modifier.fillMaxSize()) {
         val updateInfo = state.updateInfo
-        if (updateInfo != null && state.isOnboardingDone == true) {
-            UpdateSheet(
+        if (updateInfo != null) {
+            MandatoryUpdateScreen(
                 updateInfo = updateInfo,
                 isDownloading = state.isDownloading,
                 downloadProgress = state.downloadProgress,
                 updateError = state.updateError,
                 onUpdate = { mainViewModel.startUpdate() },
-                onDismiss = { mainViewModel.dismissUpdate() },
-                onDismissError = { mainViewModel.dismissError() },
+                onRetry = { mainViewModel.startUpdate() },
             )
+        } else {
+            MomentoTheme(theme = state.theme) {
+                if (state.currentChangelog != null && state.isOnboardingDone == true) {
+                    ChangelogSheet(
+                        currentLog = state.currentChangelog!!,
+                        onDismissRequest = { mainViewModel.dismissChangelog() },
+                    )
+                }
+
+                NavDisplay(
+                    modifier = Modifier.background(MaterialTheme.colorScheme.background).fillMaxSize(),
+                    backStack = backStack,
+                    entryProvider =
+                        entryProvider {
+                            entry<HomeGraph> {
+                                val homeViewModel: HomeViewModel = koinInject()
+                                val homeState by homeViewModel.state.collectAsStateWithLifecycle()
+
+                                HomeGraph(
+                                    state = homeState,
+                                    onAction = homeViewModel::onAction,
+                                    onNavigateToSettings = { backStack.add(SettingsGraph) },
+                                    onNavigateToProject = { backStack.add(ProjectGraph) },
+                                )
+                            }
+
+                            entry<Onboarding>(metadata = verticalTransitionMetadata()) {
+                                val onboardingViewModel: OnboardingViewModel = koinViewModel()
+                                val onboardingState by
+                                    onboardingViewModel.state.collectAsStateWithLifecycle()
+
+                                Onboarding(
+                                    state = onboardingState,
+                                    onAction = onboardingViewModel::onAction,
+                                    onNavigateBack = {
+                                        if (backStack.size != 1) backStack.removeLastOrNull()
+                                    },
+                                )
+                            }
+
+                            entry<ProjectGraph>(metadata = horizontalTransitionMetadata()) {
+                                val projectViewModel: ProjectViewModel = koinInject()
+                                val projectState by projectViewModel.state.collectAsStateWithLifecycle()
+                                val exoPlayer by projectViewModel.exoPlayer.collectAsStateWithLifecycle()
+
+                                ProjectGraph(
+                                    state = projectState,
+                                    exoPlayer = exoPlayer,
+                                    onAction = projectViewModel::onAction,
+                                    onNavigateBack = {
+                                        if (backStack.size != 1) backStack.removeLastOrNull()
+                                    },
+                                )
+                            }
+
+                            entry<SettingsGraph>(metadata = horizontalTransitionMetadata()) {
+                                val settingsViewModel: SettingsViewModel = koinViewModel()
+                                val settingsState by
+                                    settingsViewModel.state.collectAsStateWithLifecycle()
+
+                                SettingsGraph(
+                                    state = settingsState,
+                                    onAction = settingsViewModel::onAction,
+                                    onNavigateBack = {
+                                        if (backStack.size != 1) backStack.removeLastOrNull()
+                                    },
+                                    onNavigateToOnboarding = { backStack.add(Onboarding) },
+                                )
+                            }
+                        },
+                )
+            }
         }
-
-        NavDisplay(
-            modifier = Modifier.background(MaterialTheme.colorScheme.background).fillMaxSize(),
-            backStack = backStack,
-            entryProvider =
-                entryProvider {
-                    entry<HomeGraph> {
-                        val homeViewModel: HomeViewModel = koinInject()
-                        val homeState by homeViewModel.state.collectAsStateWithLifecycle()
-
-                        HomeGraph(
-                            state = homeState,
-                            onAction = homeViewModel::onAction,
-                            onNavigateToSettings = { backStack.add(SettingsGraph) },
-                            onNavigateToProject = { backStack.add(ProjectGraph) },
-                        )
-                    }
-
-                    entry<Onboarding>(metadata = verticalTransitionMetadata()) {
-                        val onboardingViewModel: OnboardingViewModel = koinViewModel()
-                        val onboardingState by
-                            onboardingViewModel.state.collectAsStateWithLifecycle()
-
-                        Onboarding(
-                            state = onboardingState,
-                            onAction = onboardingViewModel::onAction,
-                            onNavigateBack = {
-                                if (backStack.size != 1) backStack.removeLastOrNull()
-                            },
-                        )
-                    }
-
-                    entry<ProjectGraph>(metadata = horizontalTransitionMetadata()) {
-                        val projectViewModel: ProjectViewModel = koinInject()
-                        val projectState by projectViewModel.state.collectAsStateWithLifecycle()
-                        val exoPlayer by projectViewModel.exoPlayer.collectAsStateWithLifecycle()
-
-                        ProjectGraph(
-                            state = projectState,
-                            exoPlayer = exoPlayer,
-                            onAction = projectViewModel::onAction,
-                            onNavigateBack = {
-                                if (backStack.size != 1) backStack.removeLastOrNull()
-                            },
-                        )
-                    }
-
-                    entry<SettingsGraph>(metadata = horizontalTransitionMetadata()) {
-                        val settingsViewModel: SettingsViewModel = koinViewModel()
-                        val settingsState by settingsViewModel.state.collectAsStateWithLifecycle()
-
-                        SettingsGraph(
-                            state = settingsState,
-                            onAction = settingsViewModel::onAction,
-                            onNavigateBack = {
-                                if (backStack.size != 1) backStack.removeLastOrNull()
-                            },
-                            onNavigateToOnboarding = { backStack.add(Onboarding) },
-                        )
-                    }
-
-                },
-        )
     }
 }

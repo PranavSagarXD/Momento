@@ -1,12 +1,5 @@
 [
   {
-    "version": "2.1",
-    "changes": [
-      "Security improvements and performance optimizations",
-      "Various bug fixes"
-    ]
-  },
-  {
     "version": "2.0",
     "changes": [
       "Added auto-update — app now checks for new versions on launch",
@@ -70,6 +63,12 @@
     "version": "1.5.2",
     "changes": [
       "Improved montage maker performance"
+    ]
+  },
+  {
+    "version": "1.5.1",
+    "changes": [
+      "Added option to rescan all faces in the project."
     ]
   }
 ]

@@ -43,7 +43,6 @@ import com.sagar.momento.core.interfaces.SettingsPrefs
 import com.sagar.momento.data.ChangelogManager
 import com.sagar.momento.update.AppUpdater
 import com.sagar.momento.update.UpdateChecker
-import com.sagar.momento.update.UpdateInfo
 
 @KoinViewModel
 class MainAppViewModel(
@@ -74,18 +73,6 @@ class MainAppViewModel(
         _state.update { it.copy(currentChangelog = null) }
     }
 
-    fun dismissUpdate() {
-        val version = _state.value.updateInfo?.latestVersion ?: return
-        _state.update { it.copy(updateInfo = null) }
-        viewModelScope.launch {
-            datastore.setSkippedUpdateVersion(version)
-        }
-    }
-
-    fun dismissError() {
-        _state.update { it.copy(updateError = null) }
-    }
-
     fun startUpdate() {
         val info = _state.value.updateInfo ?: return
         _state.update { it.copy(isDownloading = true, downloadProgress = 0f, updateError = null) }
@@ -104,14 +91,8 @@ class MainAppViewModel(
 
     private fun checkForUpdates() {
         viewModelScope.launch {
-            val lastCheck = datastore.getLastUpdateCheckTime().first()
-            if (System.currentTimeMillis() - lastCheck < 86_400_000L) return@launch
-
-            datastore.setLastUpdateCheckTime(System.currentTimeMillis())
-
-            val skipped = datastore.getSkippedUpdateVersion().first()
             val info = updateChecker.check()
-            if (info != null && info.latestVersion != skipped) {
+            if (info != null) {
                 _state.update { it.copy(updateInfo = info) }
             }
         }
