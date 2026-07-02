@@ -1,13 +1,11 @@
 # Changelog
 
-## 2.1
-- Improved auto-update: skip version option, 24h check cooldown, better error handling
-- Fixed update popup showing on the latest version
-- Fixed download progress getting stuck at 100%
-- General improvements and fixes
-
 ## 2.0
 - Added auto-update — app now checks for new versions on launch
+- Fixed APK install not launching after download — uses proper system package installer
+- Fixed update popup showing on the latest version
+- Fixed download progress getting stuck at 100%
+- Improved auto-update: skip version option, 24h check cooldown, better error handling
 - Unlocked all features: stabilize faces, censor faces, video quality, custom fonts, AMOLED theme, seed color, and more
 - Simplified app distribution
 - Various improvements and fixes
