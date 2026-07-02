@@ -2,6 +2,7 @@ package com.sagar.momento.presentation.shared
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -38,37 +40,43 @@ fun MandatoryUpdateScreen(
     onRetry: () -> Unit,
 ) {
     Column(
-        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(32.dp),
+        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(horizontal = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        Icon(
-            painter = painterResource(R.drawable.settings),
-            contentDescription = null,
-            modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.primary,
-        )
+        Box(
+            modifier = Modifier.size(56.dp).background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.sync),
+                contentDescription = null,
+                modifier = Modifier.size(28.dp),
+                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+            )
+        }
 
         Spacer(modifier = Modifier.height(24.dp))
 
         Text(
             text = "Update Required",
-            style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold),
+            style = MaterialTheme.typography.headlineLarge.copy(fontFamily = flexFontEmphasis()),
             textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onBackground,
         )
 
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
             text = "Momento ${updateInfo.latestVersion}",
-            style = MaterialTheme.typography.titleLarge,
+            style = MaterialTheme.typography.titleLarge.copy(fontFamily = flexFontRounded()),
             color = MaterialTheme.colorScheme.primary,
             textAlign = TextAlign.Center,
         )
 
-        Spacer(modifier = Modifier.height(20.dp))
-
         if (updateInfo.releaseNotes.isNotBlank()) {
+            Spacer(modifier = Modifier.height(20.dp))
+
             Surface(
                 shape = RoundedCornerShape(12.dp),
                 color = MaterialTheme.colorScheme.surfaceVariant,
@@ -77,7 +85,7 @@ fun MandatoryUpdateScreen(
                 Text(
                     text = updateInfo.releaseNotes,
                     modifier = Modifier.padding(16.dp),
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodyMedium.copy(fontFamily = flexFontRounded()),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Start,
                     maxLines = 8,
@@ -98,14 +106,14 @@ fun MandatoryUpdateScreen(
                 )
                 Text(
                     text = "Downloading... ${(downloadProgress * 100).toInt()}%",
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodySmall.copy(fontFamily = flexFontRounded()),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         } else if (isApkDownloaded) {
             Text(
                 text = "Download complete. Tap Install to apply the update.",
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyMedium.copy(fontFamily = flexFontRounded()),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
             )
@@ -114,12 +122,15 @@ fun MandatoryUpdateScreen(
                 onClick = onUpdate,
                 modifier = Modifier.fillMaxWidth().height(ButtonDefaults.MediumContainerHeight),
             ) {
-                Text(text = "Install Now")
+                Text(
+                    text = "Install Now",
+                    fontFamily = flexFontRounded(),
+                )
             }
         } else if (updateError != null) {
             Text(
                 text = updateError,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyMedium.copy(fontFamily = flexFontRounded()),
                 color = MaterialTheme.colorScheme.error,
                 textAlign = TextAlign.Center,
             )
@@ -128,14 +139,20 @@ fun MandatoryUpdateScreen(
                 onClick = onRetry,
                 modifier = Modifier.fillMaxWidth().height(ButtonDefaults.MediumContainerHeight),
             ) {
-                Text(text = "Retry")
+                Text(
+                    text = "Retry",
+                    fontFamily = flexFontRounded(),
+                )
             }
         } else {
             Button(
                 onClick = onUpdate,
                 modifier = Modifier.fillMaxWidth().height(ButtonDefaults.MediumContainerHeight),
             ) {
-                Text(text = "Update Now")
+                Text(
+                    text = "Update Now",
+                    fontFamily = flexFontRounded(),
+                )
             }
         }
     }
