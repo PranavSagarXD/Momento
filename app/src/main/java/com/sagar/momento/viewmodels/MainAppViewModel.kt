@@ -75,16 +75,32 @@ class MainAppViewModel(
 
     fun startUpdate() {
         val info = _state.value.updateInfo ?: return
+        val current = _state.value
+
+        if (current.isApkDownloaded) {
+            _state.update { it.copy(updateError = null) }
+            try {
+                appUpdater.installDownloaded()
+            } catch (e: Exception) {
+                _state.update { it.copy(updateError = "Install failed. Please try again.") }
+            }
+            return
+        }
+
         _state.update { it.copy(isDownloading = true, downloadProgress = 0f, updateError = null) }
 
         viewModelScope.launch {
-            val success = appUpdater.downloadAndInstall(info.downloadUrl) { progress ->
+            val success = appUpdater.downloadApk(info.downloadUrl) { progress ->
                 _state.update { it.copy(downloadProgress = progress) }
             }
             if (success) {
-                _state.update { it.copy(updateInfo = null, isDownloading = false, downloadProgress = 0f) }
+                _state.update { it.copy(isDownloading = false, downloadProgress = 1f, isApkDownloaded = true) }
+                try {
+                    appUpdater.installDownloaded()
+                } catch (_: Exception) {
+                }
             } else {
-                _state.update { it.copy(isDownloading = false, downloadProgress = 0f, updateError = "Install failed. Make sure you have allowed installation from unknown sources.") }
+                _state.update { it.copy(isDownloading = false, updateError = "Download failed. Please try again.") }
             }
         }
     }

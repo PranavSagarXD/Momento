@@ -12,8 +12,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class AppUpdater(private val context: Context) {
+    private val apkFile: File
+        get() = File(context.cacheDir, "Momento-update.apk")
 
-    suspend fun downloadAndInstall(
+    suspend fun downloadApk(
         downloadUrl: String,
         onProgress: (Float) -> Unit = {},
     ): Boolean = withContext(Dispatchers.IO) {
@@ -27,7 +29,6 @@ class AppUpdater(private val context: Context) {
             val fileLength = conn.contentLengthLong
             val inputStream = conn.inputStream
 
-            val apkFile = File(context.cacheDir, "Momento-update.apk")
             FileOutputStream(apkFile).use { outputStream ->
                 val buffer = ByteArray(8192)
                 var bytesRead: Int
@@ -43,14 +44,18 @@ class AppUpdater(private val context: Context) {
 
             inputStream.close()
             conn.disconnect()
-
-            installApk(apkFile)
             true
         } catch (e: Exception) {
-            android.util.Log.e("AppUpdater", "Failed to download/install update", e)
+            android.util.Log.e("AppUpdater", "Failed to download update", e)
             false
         }
     }
+
+    fun installDownloaded() {
+        installApk(apkFile)
+    }
+
+    fun isApkDownloaded(): Boolean = apkFile.exists()
 
     private fun installApk(apkFile: File) {
         val uri: Uri = FileProvider.getUriForFile(

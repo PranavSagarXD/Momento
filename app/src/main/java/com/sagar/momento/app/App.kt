@@ -74,18 +74,19 @@ fun App() {
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        val updateInfo = state.updateInfo
-        if (updateInfo != null) {
-            MandatoryUpdateScreen(
-                updateInfo = updateInfo,
-                isDownloading = state.isDownloading,
-                downloadProgress = state.downloadProgress,
-                updateError = state.updateError,
-                onUpdate = { mainViewModel.startUpdate() },
-                onRetry = { mainViewModel.startUpdate() },
-            )
-        } else {
-            MomentoTheme(theme = state.theme) {
+        MomentoTheme(theme = state.theme) {
+            val updateInfo = state.updateInfo
+            if (updateInfo != null) {
+                MandatoryUpdateScreen(
+                    updateInfo = updateInfo,
+                    isDownloading = state.isDownloading,
+                    downloadProgress = state.downloadProgress,
+                    isApkDownloaded = state.isApkDownloaded,
+                    updateError = state.updateError,
+                    onUpdate = { mainViewModel.startUpdate() },
+                    onRetry = { mainViewModel.startUpdate() },
+                )
+            } else {
                 if (state.currentChangelog != null && state.isOnboardingDone == true) {
                     ChangelogSheet(
                         currentLog = state.currentChangelog!!,

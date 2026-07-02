@@ -40,5 +40,6 @@ data class MainAppState(
     val updateInfo: UpdateInfo? = null,
     val isDownloading: Boolean = false,
     val downloadProgress: Float = 0f,
+    val isApkDownloaded: Boolean = false,
     val updateError: String? = null,
 )
