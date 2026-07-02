@@ -71,8 +71,6 @@ fun ProjectGraph(
     exoPlayer: ExoPlayer?,
     onAction: (ProjectAction) -> Unit,
     onNavigateBack: () -> Unit,
-    isPlusUser: Boolean,
-    onNavigateToPaywall: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val backStack = rememberNavBackStack(ProjectDetails)
@@ -119,8 +117,6 @@ fun ProjectGraph(
                         exoPlayer = exoPlayer,
                         onAction = onAction,
                         onNavigateBack = { if (backStack.size != 1) backStack.removeLastOrNull() },
-                        isPlusUser = isPlusUser,
-                        onNavigateToPaywall = onNavigateToPaywall,
                     )
                 }
 
@@ -193,8 +189,6 @@ private fun Preview() {
             onAction = {},
             onNavigateBack = {},
             exoPlayer = null,
-            isPlusUser = true,
-            onNavigateToPaywall = {},
         )
     }
 }

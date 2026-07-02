@@ -104,8 +104,6 @@ fun LookAndFeel(
     state: SettingsState,
     onAction: (SettingsAction) -> Unit,
     onNavigateBack: () -> Unit,
-    isPlusUser: Boolean,
-    onNavigateToPaywall: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var colorPickerDialog by remember { mutableStateOf(false) }
@@ -219,33 +217,12 @@ fun LookAndFeel(
                                 )
                             },
                             colors = listItemColors(),
-                            modifier =
-                                Modifier.clip(if (isPlusUser) middleItemShape() else endItemShape()),
+                            modifier = Modifier.clip(middleItemShape()),
                         )
                     }
 
-                    // plus redirect
-                    if (!isPlusUser) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier.fillParentMaxWidth().height(60.dp),
-                        ) {
-                            LinearWavyProgressIndicator(
-                                progress = { 0.90f },
-                                modifier = Modifier.fillParentMaxWidth(),
-                            )
-
-                            Button(onClick = onNavigateToPaywall) {
-                                Text(text = stringResource(R.string.unlock_more_pro))
-                            }
-                        }
-                    }
-
                     // font picker
-                    Column(
-                        modifier =
-                            Modifier.clip(if (isPlusUser) middleItemShape() else leadingItemShape())
-                    ) {
+                    Column(modifier = Modifier.clip(middleItemShape())) {
                         ListItem(
                             headlineContent = { Text(text = stringResource(R.string.font)) },
                             leadingContent = {
@@ -270,7 +247,7 @@ fun LookAndFeel(
                                     onCheckedChange = {
                                         onAction(SettingsAction.OnFontChange(font))
                                     },
-                                    enabled = isPlusUser,
+                                    enabled = true,
                                     colors =
                                         ToggleButtonDefaults.toggleButtonColors(
                                             containerColor =
@@ -294,7 +271,7 @@ fun LookAndFeel(
                         trailingContent = {
                             Switch(
                                 checked = state.theme.isAmoled,
-                                enabled = isPlusUser,
+                                enabled = true,
                                 onCheckedChange = { onAction(SettingsAction.OnAmoledSwitch(it)) },
                             )
                         },
@@ -316,7 +293,7 @@ fun LookAndFeel(
                                             containerColor = state.theme.seedColor,
                                             contentColor = contentColorFor(state.theme.seedColor),
                                         ),
-                                    enabled = isPlusUser,
+                                    enabled = true,
                                 ) {
                                     Icon(
                                         painter = painterResource(R.drawable.edit),
@@ -380,7 +357,7 @@ fun LookAndFeel(
                                                 if (selected) MaterialShapes.VerySunny.toShape()
                                                 else CircleShape
                                             )
-                                            .clickable(enabled = isPlusUser) {
+                                            .clickable(enabled = true) {
                                                 onAction(SettingsAction.OnPaletteChange(style))
                                             },
                                     contentAlignment = Alignment.Center,
@@ -451,8 +428,6 @@ private fun Preview() {
             state = SettingsState(),
             onAction = {},
             onNavigateBack = {},
-            isPlusUser = true,
-            onNavigateToPaywall = {},
         )
     }
 }

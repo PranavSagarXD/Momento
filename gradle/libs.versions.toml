@@ -22,8 +22,6 @@ compose = "1.11.3"
 landscapist = "2.10.0"
 filekit = "0.14.2"
 annotation-jvm = "1.10.0"
-purchases = "10.10.0"
-#noinspection GradleDependency
 tasks-vision = "0.10.32"
 truth = "1.4.5"
 espresso-core = "3.7.0"
@@ -62,10 +60,6 @@ camera-core = { module = "androidx.camera:camera-core", version.ref = "camera" }
 camera-lifecycle = { module = "androidx.camera:camera-lifecycle", version.ref = "camera" }
 camera-compose = { module = "androidx.camera:camera-compose", version.ref = "camera" }
 accompanist-permissions = { group = "com.google.accompanist", name = "accompanist-permissions", version.ref = "permissions" }
-
-# Purchases
-purchases = { module = "com.revenuecat.purchases:purchases", version.ref = "purchases" }
-purchases-ui = { module = "com.revenuecat.purchases:purchases-ui", version.ref = "purchases" }
 
 # Koin
 koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }

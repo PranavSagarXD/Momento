@@ -65,7 +65,6 @@ fun Root(
     onNavigateBack: () -> Unit,
     onNavigateToLookAndFeel: () -> Unit,
     onNavigateToOnboarding: () -> Unit,
-    onNavigateToPaywall: () -> Unit,
     onNavigateToChangelog: () -> Unit,
     onNavigateToAppInfo: () -> Unit,
     currentVersion: String,
@@ -103,30 +102,6 @@ fun Root(
                 ),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            // donate momento
-            item {
-                ListItem(
-                    headlineContent = { Text(text = stringResource(R.string.pro)) },
-                    colors = listItemColors(),
-                    modifier =
-                        Modifier.clip(detachedItemShape()).clickable { onNavigateToPaywall() },
-                    trailingContent = {
-                        Icon(
-                            painter = painterResource(R.drawable.arrow_forward),
-                            contentDescription = "Donate Momento",
-                        )
-                    },
-                    leadingContent = {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_launcher_foreground),
-                            contentDescription = null,
-                            modifier = Modifier.size(30.dp),
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
-                    },
-                )
-            }
-
             item {
                 ListItem(
                     colors = listItemColors(),
@@ -227,7 +202,6 @@ private fun Preview() {
         Root(
             onNavigateBack = {},
             onNavigateToLookAndFeel = {},
-            onNavigateToPaywall = {},
             onNavigateToChangelog = {},
             onNavigateToOnboarding = {},
             onNavigateToAppInfo = {},

@@ -21,6 +21,7 @@
  */
 package com.sagar.momento.viewmodels
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
@@ -38,25 +39,29 @@ import kotlinx.coroutines.launch
 import org.koin.core.annotation.KoinViewModel
 import com.sagar.momento.BuildConfig
 import com.sagar.momento.app.MainAppState
-import com.sagar.momento.billing.domain.BillingHandler
 import com.sagar.momento.core.interfaces.SettingsPrefs
 import com.sagar.momento.data.ChangelogManager
+import com.sagar.momento.update.AppUpdater
+import com.sagar.momento.update.UpdateChecker
+import com.sagar.momento.update.UpdateInfo
 
 @KoinViewModel
 class MainAppViewModel(
+    private val context: Context,
     private val datastore: SettingsPrefs,
-    private val billingHandler: BillingHandler,
     private val changelogManager: ChangelogManager,
 ) : ViewModel() {
     private var observerJob: Job? = null
+    private val updateChecker = UpdateChecker()
+    private val appUpdater = AppUpdater(context)
 
     private val _state = MutableStateFlow(MainAppState())
     val state =
         _state
             .asStateFlow()
             .onStart {
-                checkSubscription()
                 checkChangelog()
+                checkForUpdates()
                 observeData()
             }
             .stateIn(
@@ -65,16 +70,35 @@ class MainAppViewModel(
                 initialValue = MainAppState(),
             )
 
-    fun checkSubscription() {
-        viewModelScope.launch {
-            val result = billingHandler.isPlusUser()
+    fun dismissChangelog() {
+        _state.update { it.copy(currentChangelog = null) }
+    }
 
-            _state.update { it.copy(isPlusUser = result) }
+    fun dismissUpdate() {
+        _state.update { it.copy(updateInfo = null) }
+    }
+
+    fun startUpdate() {
+        val info = _state.value.updateInfo ?: return
+        _state.update { it.copy(isDownloading = true, downloadProgress = 0f) }
+
+        viewModelScope.launch {
+            val success = appUpdater.downloadAndInstall(info.downloadUrl) { progress ->
+                _state.update { it.copy(downloadProgress = progress) }
+            }
+            if (!success) {
+                _state.update { it.copy(isDownloading = false, downloadProgress = 0f) }
+            }
         }
     }
 
-    fun dismissChangelog() {
-        _state.update { it.copy(currentChangelog = null) }
+    private fun checkForUpdates() {
+        viewModelScope.launch {
+            val info = updateChecker.check()
+            if (info != null) {
+                _state.update { it.copy(updateInfo = info) }
+            }
+        }
     }
 
     private fun checkChangelog() {

@@ -29,8 +29,8 @@ plugins {
 }
 
 val appName = "Momento"
-val appVersionCode = 1721
-val appVersionName = project.findProperty("appVersionName") as? String ?: "1.1"
+val appVersionCode = 2000
+val appVersionName = project.findProperty("appVersionName") as? String ?: "2.0"
 val appNameSpace = "com.sagar.momento"
 
 val gitHash = execute("git", "rev-parse", "HEAD").take(7)
@@ -76,18 +76,6 @@ android {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
         }
-    }
-
-    flavorDimensions += "version"
-
-    productFlavors {
-        create("play") {
-            dimension = "version"
-            applicationIdSuffix = ".play"
-            versionNameSuffix = "-play"
-        }
-
-        create("foss") { dimension = "version" }
     }
 
     compileOptions {
@@ -144,9 +132,6 @@ dependencies {
     implementation(project(":common:core"))
     implementation(project(":common:montage"))
     implementation(project(":common:facedetection"))
-
-    "playImplementation"(libs.purchases.ui)
-    "playImplementation"(libs.purchases)
 
     implementation(libs.camera.core)
     implementation(libs.camera.camera2)

@@ -36,7 +36,6 @@ import androidx.navigation3.ui.NavDisplay
 import kotlinx.serialization.Serializable
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
-import com.sagar.momento.billing.presentation.PaywallPage
 import com.sagar.momento.navigation.horizontalTransitionMetadata
 import com.sagar.momento.navigation.verticalTransitionMetadata
 import com.sagar.momento.presentation.home.HomeGraph
@@ -45,6 +44,7 @@ import com.sagar.momento.presentation.project.ProjectGraph
 import com.sagar.momento.presentation.settings.SettingsGraph
 import com.sagar.momento.presentation.shared.ChangelogSheet
 import com.sagar.momento.presentation.shared.MomentoTheme
+import com.sagar.momento.presentation.shared.UpdateSheet
 import com.sagar.momento.viewmodels.HomeViewModel
 import com.sagar.momento.viewmodels.MainAppViewModel
 import com.sagar.momento.viewmodels.OnboardingViewModel
@@ -58,8 +58,6 @@ import com.sagar.momento.viewmodels.SettingsViewModel
 @Serializable data object ProjectGraph : NavKey
 
 @Serializable data object SettingsGraph : NavKey
-
-@Serializable data object PaywallPage : NavKey
 
 @Composable
 fun App() {
@@ -82,6 +80,16 @@ fun App() {
             )
         }
 
+        if (state.updateInfo != null && state.isOnboardingDone == true) {
+            UpdateSheet(
+                updateInfo = state.updateInfo!!,
+                isDownloading = state.isDownloading,
+                downloadProgress = state.downloadProgress,
+                onUpdate = { mainViewModel.startUpdate() },
+                onDismiss = { mainViewModel.dismissUpdate() },
+            )
+        }
+
         NavDisplay(
             modifier = Modifier.background(MaterialTheme.colorScheme.background).fillMaxSize(),
             backStack = backStack,
@@ -96,8 +104,6 @@ fun App() {
                             onAction = homeViewModel::onAction,
                             onNavigateToSettings = { backStack.add(SettingsGraph) },
                             onNavigateToProject = { backStack.add(ProjectGraph) },
-                            isPlusUser = state.isPlusUser,
-                            onNavigateToPaywall = { backStack.add(PaywallPage) },
                         )
                     }
 
@@ -127,8 +133,6 @@ fun App() {
                             onNavigateBack = {
                                 if (backStack.size != 1) backStack.removeLastOrNull()
                             },
-                            isPlusUser = state.isPlusUser,
-                            onNavigateToPaywall = { backStack.add(PaywallPage) },
                         )
                     }
 
@@ -142,21 +146,10 @@ fun App() {
                             onNavigateBack = {
                                 if (backStack.size != 1) backStack.removeLastOrNull()
                             },
-                            isPlusUser = state.isPlusUser,
-                            onNavigateToPaywall = { backStack.add(PaywallPage) },
                             onNavigateToOnboarding = { backStack.add(Onboarding) },
                         )
                     }
 
-                    entry<PaywallPage>(metadata = verticalTransitionMetadata()) {
-                        PaywallPage(
-                            isPlusUser = state.isPlusUser,
-                            onDismissRequest = {
-                                mainViewModel.checkSubscription()
-                                if (backStack.size != 1) backStack.removeLastOrNull()
-                            },
-                        )
-                    }
                 },
         )
     }

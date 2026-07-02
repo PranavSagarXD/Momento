@@ -25,6 +25,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import kotlinx.serialization.Serializable
 import com.sagar.momento.core.data_classes.Theme
+import com.sagar.momento.update.UpdateInfo
 
 @Serializable data class VersionEntry(val version: String, val changes: List<String>)
 
@@ -35,6 +36,8 @@ typealias Changelog = List<VersionEntry>
 data class MainAppState(
     val isOnboardingDone: Boolean? = null,
     val theme: Theme = Theme(),
-    val isPlusUser: Boolean = false,
-    val currentChangelog: VersionEntry? = null, // if not null then shows changelog
+    val currentChangelog: VersionEntry? = null,
+    val updateInfo: UpdateInfo? = null,
+    val isDownloading: Boolean = false,
+    val downloadProgress: Float = 0f,
 )

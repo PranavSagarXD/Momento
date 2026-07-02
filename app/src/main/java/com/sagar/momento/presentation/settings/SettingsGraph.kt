@@ -50,8 +50,6 @@ fun SettingsGraph(
     state: SettingsState,
     onAction: (SettingsAction) -> Unit,
     onNavigateBack: () -> Unit,
-    isPlusUser: Boolean,
-    onNavigateToPaywall: () -> Unit,
     onNavigateToOnboarding: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -67,7 +65,6 @@ fun SettingsGraph(
                         onNavigateBack = onNavigateBack,
                         onNavigateToOnboarding = onNavigateToOnboarding,
                         onNavigateToLookAndFeel = { backStack.add(Routes.LookAndFeel) },
-                        onNavigateToPaywall = onNavigateToPaywall,
                         onNavigateToChangelog = { backStack.add(Routes.Changelog) },
                         onNavigateToAppInfo = { backStack.add(Routes.About) },
                         currentVersion = state.changelog.firstOrNull()?.version ?: "",
@@ -79,8 +76,6 @@ fun SettingsGraph(
                         state = state,
                         onAction = onAction,
                         onNavigateBack = { if (backStack.size != 1) backStack.removeLastOrNull() },
-                        isPlusUser = isPlusUser,
-                        onNavigateToPaywall = onNavigateToPaywall,
                     )
                 }
 

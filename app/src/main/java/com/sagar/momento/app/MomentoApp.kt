@@ -24,15 +24,11 @@ package com.sagar.momento.app
 import android.app.Application
 import org.koin.android.ext.koin.androidContext
 import org.koin.plugin.module.dsl.startKoin
-import com.sagar.momento.billing.data.BillingInitializerImpl
 import com.sagar.momento.di.AppModule
 
 class MomentoApp : Application() {
     override fun onCreate() {
         super.onCreate()
-
         startKoin<AppModule> { androidContext(this@MomentoApp) }
-
-        BillingInitializerImpl().initialize(this)
     }
 }

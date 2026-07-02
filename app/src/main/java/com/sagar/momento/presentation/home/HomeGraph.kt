@@ -48,8 +48,6 @@ fun HomeGraph(
     onAction: (HomeAction) -> Unit,
     onNavigateToSettings: () -> Unit,
     onNavigateToProject: () -> Unit,
-    isPlusUser: Boolean,
-    onNavigateToPaywall: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var showProjectUpsertSheet by remember { mutableStateOf(false) }
@@ -60,13 +58,7 @@ fun HomeGraph(
         onAction = onAction,
         onNavigateToProject = onNavigateToProject,
         onNavigateToSettings = onNavigateToSettings,
-        onNavigateToNewProject = {
-            if (state.projects.size <= 3 || isPlusUser) {
-                showProjectUpsertSheet = true
-            } else {
-                onNavigateToPaywall()
-            }
-        },
+        onNavigateToNewProject = { showProjectUpsertSheet = true },
     )
 
     if (showProjectUpsertSheet) {
@@ -116,8 +108,6 @@ private fun Preview() {
             onAction = {},
             onNavigateToSettings = {},
             onNavigateToProject = {},
-            isPlusUser = true,
-            onNavigateToPaywall = {},
         )
     }
 }

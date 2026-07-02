@@ -57,9 +57,6 @@
     <string name="everyday_at">Everyday at</string>
     <string name="guide_text">Tap on a Day to add a picture for it</string>
     <string name="foss">You are using the FOSS variant</string>
-    <string name="foss_desc">Thank you for choosing Momento! If this app has brought value to your life, consider supporting its development. Your donations help cover server costs, fund new features, and keep the app ad-free and privacy-focused. Every contribution, no matter how small, makes a difference.</string>
-    <string name="pro">Donate Momento</string>
-    <string name="unlock_more_pro">Unlock more with Plus</string>
     <string name="processing_images">Processing Images</string>
     <string name="stabilize_faces">Stabilize Faces</string>
     <plurals name="add_more_days">

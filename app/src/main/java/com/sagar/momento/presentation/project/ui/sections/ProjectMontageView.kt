@@ -82,8 +82,6 @@ fun ProjectMontageView(
     state: ProjectState,
     onAction: (ProjectAction) -> Unit,
     onNavigateBack: () -> Unit,
-    isPlusUser: Boolean,
-    onNavigateToPaywall: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -216,8 +214,6 @@ fun ProjectMontageView(
                 onDismissRequest = { showEditSheet = false },
                 buttonEnabled =
                     state.montageConfig != (state.montage as? MontageState.Success)?.config,
-                isPlusUser = isPlusUser,
-                onNavigateToPaywall = onNavigateToPaywall,
             )
         }
     }
@@ -252,8 +248,6 @@ private fun Preview() {
             onAction = {},
             onNavigateBack = {},
             exoPlayer = null,
-            isPlusUser = true,
-            onNavigateToPaywall = {},
         )
     }
 }

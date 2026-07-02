@@ -93,8 +93,6 @@ fun MontageEditSheet(
     onAction: (ProjectAction) -> Unit,
     onDismissRequest: () -> Unit,
     buttonEnabled: Boolean,
-    isPlusUser: Boolean,
-    onNavigateToPaywall: () -> Unit,
     modifier: Modifier = Modifier,
     sheetState: SheetState =
         rememberBottomSheetState(
@@ -317,15 +315,11 @@ fun MontageEditSheet(
                             Switch(
                                 checked = state.montageConfig.stabilizeFaces,
                                 onCheckedChange = {
-                                    if (isPlusUser) {
-                                        onAction(
-                                            ProjectAction.OnEditMontageConfig(
-                                                state.montageConfig.copy(stabilizeFaces = it)
-                                            )
+                                    onAction(
+                                        ProjectAction.OnEditMontageConfig(
+                                            state.montageConfig.copy(stabilizeFaces = it)
                                         )
-                                    } else {
-                                        onNavigateToPaywall()
-                                    }
+                                    )
                                 },
                             )
                         }
@@ -350,15 +344,11 @@ fun MontageEditSheet(
                                     checked = state.montageConfig.censorFaces,
                                     enabled = state.montageConfig.stabilizeFaces,
                                     onCheckedChange = {
-                                        if (isPlusUser) {
-                                            onAction(
-                                                ProjectAction.OnEditMontageConfig(
-                                                    state.montageConfig.copy(censorFaces = it)
-                                                )
+                                        onAction(
+                                            ProjectAction.OnEditMontageConfig(
+                                                state.montageConfig.copy(censorFaces = it)
                                             )
-                                        } else {
-                                            onNavigateToPaywall()
-                                        }
+                                        )
                                     },
                                 )
                             }
@@ -368,20 +358,6 @@ fun MontageEditSheet(
             }
 
             item { Spacer(modifier = Modifier.height(16.dp)) }
-
-            if (!isPlusUser) {
-                item {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.fillMaxWidth().height(100.dp),
-                    ) {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = onNavigateToPaywall) {
-                            Text(text = stringResource(R.string.unlock_more_pro))
-                        }
-                    }
-                }
-            }
 
             // video quality
             item {
@@ -408,17 +384,12 @@ fun MontageEditSheet(
                         VideoQuality.entries.forEach { quality ->
                             ToggleButton(
                                 checked = quality == state.montageConfig.videoQuality,
-                                enabled = isPlusUser,
                                 onCheckedChange = {
-                                    if (isPlusUser) {
-                                        onAction(
-                                            ProjectAction.OnEditMontageConfig(
-                                                state.montageConfig.copy(videoQuality = quality)
-                                            )
+                                    onAction(
+                                        ProjectAction.OnEditMontageConfig(
+                                            state.montageConfig.copy(videoQuality = quality)
                                         )
-                                    } else {
-                                        onNavigateToPaywall()
-                                    }
+                                    )
                                 },
                             ) {
                                 Text(text = quality.name)
@@ -460,7 +431,6 @@ fun MontageEditSheet(
                                         )
                                     )
                                 },
-                                enabled = isPlusUser,
                             ) {
                                 Text(text = font.toDisplayString())
                             }
@@ -484,17 +454,12 @@ fun MontageEditSheet(
 
                         Switch(
                             checked = state.montageConfig.waterMark,
-                            enabled = isPlusUser,
                             onCheckedChange = {
-                                if (isPlusUser) {
-                                    onAction(
-                                        ProjectAction.OnEditMontageConfig(
-                                            state.montageConfig.copy(waterMark = it)
-                                        )
+                                onAction(
+                                    ProjectAction.OnEditMontageConfig(
+                                        state.montageConfig.copy(waterMark = it)
                                     )
-                                } else {
-                                    onNavigateToPaywall()
-                                }
+                                )
                             },
                         )
                     }
@@ -515,14 +480,7 @@ fun MontageEditSheet(
                         )
 
                         IconButton(
-                            onClick = {
-                                if (isPlusUser) {
-                                    showColorPicker = true
-                                } else {
-                                    onNavigateToPaywall()
-                                }
-                            },
-                            enabled = isPlusUser,
+                            onClick = { showColorPicker = true },
                             colors =
                                 IconButtonDefaults.iconButtonColors(
                                     containerColor = state.montageConfig.backgroundColor,
@@ -566,7 +524,5 @@ private fun Preview() {
         buttonEnabled = false,
         onDismissRequest = {},
         sheetState = rememberBottomSheetState(initialValue = SheetValue.Expanded),
-        isPlusUser = false,
-        onNavigateToPaywall = {},
     )
 }
