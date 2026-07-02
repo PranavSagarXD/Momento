@@ -29,6 +29,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -58,6 +59,8 @@ class SettingsPrefsImpl(private val dataStore: DataStore<Preferences>) : Setting
         private val onboardingDone = booleanPreferencesKey("onboarding_done")
         private val selectedFont = stringPreferencesKey("font")
         private val lastChangelogShownKey = stringPreferencesKey("last_changelog_shown")
+        private val skippedUpdateVersionKey = stringPreferencesKey("skipped_update_version")
+        private val lastUpdateCheckTimeKey = longPreferencesKey("last_update_check_time")
     }
 
     override fun getAppThemePrefFlow(): Flow<AppTheme> =
@@ -127,5 +130,19 @@ class SettingsPrefsImpl(private val dataStore: DataStore<Preferences>) : Setting
 
     override suspend fun updateLastChangelogShown(version: String) {
         dataStore.edit { settings -> settings[lastChangelogShownKey] = version }
+    }
+
+    override fun getSkippedUpdateVersion(): Flow<String> =
+        dataStore.data.map { prefs -> prefs[skippedUpdateVersionKey] ?: "" }
+
+    override suspend fun setSkippedUpdateVersion(version: String) {
+        dataStore.edit { settings -> settings[skippedUpdateVersionKey] = version }
+    }
+
+    override fun getLastUpdateCheckTime(): Flow<Long> =
+        dataStore.data.map { prefs -> prefs[lastUpdateCheckTimeKey] ?: 0L }
+
+    override suspend fun setLastUpdateCheckTime(timestamp: Long) {
+        dataStore.edit { settings -> settings[lastUpdateCheckTimeKey] = timestamp }
     }
 }

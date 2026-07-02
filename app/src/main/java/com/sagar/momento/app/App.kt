@@ -80,13 +80,16 @@ fun App() {
             )
         }
 
-        if (state.updateInfo != null && state.isOnboardingDone == true) {
+        val updateInfo = state.updateInfo
+        if (updateInfo != null && state.isOnboardingDone == true) {
             UpdateSheet(
-                updateInfo = state.updateInfo!!,
+                updateInfo = updateInfo,
                 isDownloading = state.isDownloading,
                 downloadProgress = state.downloadProgress,
+                updateError = state.updateError,
                 onUpdate = { mainViewModel.startUpdate() },
                 onDismiss = { mainViewModel.dismissUpdate() },
+                onDismissError = { mainViewModel.dismissError() },
             )
         }
 

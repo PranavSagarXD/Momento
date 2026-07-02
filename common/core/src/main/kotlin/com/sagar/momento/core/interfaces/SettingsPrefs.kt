@@ -61,4 +61,12 @@ interface SettingsPrefs {
     fun getLastChangelogShown(): Flow<String>
 
     suspend fun updateLastChangelogShown(version: String)
+
+    fun getSkippedUpdateVersion(): Flow<String>
+
+    suspend fun setSkippedUpdateVersion(version: String)
+
+    fun getLastUpdateCheckTime(): Flow<Long>
+
+    suspend fun setLastUpdateCheckTime(timestamp: Long)
 }

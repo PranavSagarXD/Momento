@@ -75,12 +75,20 @@ class MainAppViewModel(
     }
 
     fun dismissUpdate() {
+        val version = _state.value.updateInfo?.latestVersion ?: return
         _state.update { it.copy(updateInfo = null) }
+        viewModelScope.launch {
+            datastore.setSkippedUpdateVersion(version)
+        }
+    }
+
+    fun dismissError() {
+        _state.update { it.copy(updateError = null) }
     }
 
     fun startUpdate() {
         val info = _state.value.updateInfo ?: return
-        _state.update { it.copy(isDownloading = true, downloadProgress = 0f) }
+        _state.update { it.copy(isDownloading = true, downloadProgress = 0f, updateError = null) }
 
         viewModelScope.launch {
             val success = appUpdater.downloadAndInstall(info.downloadUrl) { progress ->
@@ -89,15 +97,21 @@ class MainAppViewModel(
             if (success) {
                 _state.update { it.copy(updateInfo = null, isDownloading = false, downloadProgress = 0f) }
             } else {
-                _state.update { it.copy(isDownloading = false, downloadProgress = 0f) }
+                _state.update { it.copy(isDownloading = false, downloadProgress = 0f, updateError = "Install failed. Make sure you have allowed installation from unknown sources.") }
             }
         }
     }
 
     private fun checkForUpdates() {
         viewModelScope.launch {
+            val lastCheck = datastore.getLastUpdateCheckTime().first()
+            if (System.currentTimeMillis() - lastCheck < 86_400_000L) return@launch
+
+            datastore.setLastUpdateCheckTime(System.currentTimeMillis())
+
+            val skipped = datastore.getSkippedUpdateVersion().first()
             val info = updateChecker.check()
-            if (info != null) {
+            if (info != null && info.latestVersion != skipped) {
                 _state.update { it.copy(updateInfo = info) }
             }
         }
